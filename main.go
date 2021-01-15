@@ -12,6 +12,8 @@ import (
 	"github.com/360EntSecGroup-Skylar/excelize"
 )
 
+const VERSION = "0.1.0"
+
 func main() {
 	args := os.Args
 	cmd := filepath.Base(args[0])
@@ -44,7 +46,9 @@ func csvToXlsx(src io.Reader, filename string) {
 		}
 		check(err)
 		sheet := fmt.Sprintf("Sheet%d", row/maxRow+1)
-		xlsxFile.NewSheet(sheet)
+		if row > 0 && row%maxRow == 0 {
+			xlsxFile.NewSheet(sheet)
+		}
 		for k, v := range record {
 			xlsxFile.SetCellValue(sheet, axis(k, row%maxRow+1), v)
 		}
@@ -85,7 +89,7 @@ func axis(col, row int) string {
 
 func convertToTitle(n int) string {
 	if n < 26 {
-		return string(n + 'A')
+		return fmt.Sprintf("%c", n+'A')
 	}
-	return convertToTitle(n/26-1) + string(n%26+'A')
+	return convertToTitle(n/26-1) + fmt.Sprintf("%c", n%26+'A')
 }
