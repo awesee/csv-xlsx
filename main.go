@@ -34,20 +34,22 @@ func main() {
 }
 
 func csvToXlsx(src io.Reader, filename string) {
+	maxRow := 0xFFFFF + 1
 	csvFile := csv.NewReader(src)
 	xlsxFile := excelize.NewFile()
-	row := 0
-	for {
+	for row := 0; ; row++ {
 		record, err := csvFile.Read()
 		if err == io.EOF {
 			break
 		}
 		check(err)
-		row++
+		sheet := fmt.Sprintf("Sheet%d", row/maxRow+1)
+		xlsxFile.NewSheet(sheet)
 		for k, v := range record {
-			xlsxFile.SetCellValue("Sheet1", axis(k, row), v)
+			xlsxFile.SetCellValue(sheet, axis(k, row%maxRow+1), v)
 		}
 	}
+	xlsxFile.SetActiveSheet(1)
 	err := xlsxFile.SaveAs(filename + ".xlsx")
 	check(err)
 }
@@ -77,13 +79,13 @@ func check(err error) {
 	}
 }
 
-func axis(x, y int) string {
-	return fmt.Sprintf("%s%d", col(x), y)
+func axis(col, row int) string {
+	return fmt.Sprintf("%s%d", convertToTitle(col), row)
 }
 
-func col(n int) string {
+func convertToTitle(n int) string {
 	if n < 26 {
 		return string(n + 'A')
 	}
-	return col(n/26-1) + string(n%26+'A')
+	return convertToTitle(n/26-1) + string(n%26+'A')
 }
