@@ -16,7 +16,7 @@ func main() {
 	args := os.Args
 	cmd := filepath.Base(args[0])
 	if len(args) < 2 {
-		fmt.Printf("Usage: %s files.csv|files.xlsx\n", cmd)
+		fmt.Printf("Usage: %s file.csv|file.xlsx...\n", cmd)
 		return
 	}
 	for _, filename := range args[1:] {
