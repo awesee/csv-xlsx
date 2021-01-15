@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/360EntSecGroup-Skylar/excelize"
+	"github.com/360EntSecGroup-Skylar/excelize/v2"
 )
 
-const VERSION = "0.1.2"
+const VERSION = "0.2.0"
 
 func main() {
 	args := os.Args
@@ -24,10 +24,10 @@ func main() {
 	for _, filename := range args[1:] {
 		src, err := os.Open(filename)
 		check(err)
-		ext := strings.ToLower(filepath.Ext(filename))
+		ext := filepath.Ext(filename)
 		name := strings.TrimSuffix(filename, ext)
 		basename := filepath.Base(filename)
-		switch ext {
+		switch strings.ToLower(ext) {
 		case ".csv":
 			csvToXlsx(src, name)
 		case ".xlsx":
@@ -40,33 +40,45 @@ func main() {
 }
 
 func csvToXlsx(src io.Reader, name string) {
-	maxRow := 0xFFFFF + 1
 	csvFile := csv.NewReader(src)
 	csvFile.FieldsPerRecord = -1
 	xlsxFile := excelize.NewFile()
-	for row := 0; ; row++ {
+	maxRows := excelize.TotalRows
+	var streamWriter *excelize.StreamWriter
+	streamWriterFlush := func() {
+		if streamWriter != nil {
+			check(streamWriter.Flush())
+		}
+	}
+	for rowID := 0; ; rowID++ {
 		record, err := csvFile.Read()
 		if err == io.EOF {
 			break
 		}
 		check(err)
-		sheet := fmt.Sprintf("Sheet%d", row/maxRow+1)
-		if row > 0 && row%maxRow == 0 {
+		if rowID%maxRows == 0 {
+			streamWriterFlush()
+			sheet := fmt.Sprintf("Sheet%d", rowID/maxRows+1)
 			xlsxFile.NewSheet(sheet)
+			streamWriter, err = xlsxFile.NewStreamWriter(sheet)
+			check(err)
 		}
+		row := make([]interface{}, len(record))
 		for k, v := range record {
-			xlsxFile.SetCellValue(sheet, axis(k, row%maxRow+1), v)
+			row[k] = v
 		}
+		axis, err := excelize.CoordinatesToCellName(1, rowID%maxRows+1)
+		check(err)
+		check(streamWriter.SetRow(axis, row))
 	}
-	xlsxFile.SetActiveSheet(1)
-	err := xlsxFile.SaveAs(name + ".xlsx")
-	check(err)
+	streamWriterFlush()
+	check(xlsxFile.SaveAs(name + ".xlsx"))
 }
 
 func xlsxToCsv(src io.Reader, name string) {
 	xlsxFile, err := excelize.OpenReader(src)
 	check(err)
-	for _, sheet := range xlsxFile.GetSheetMap() {
+	for _, sheet := range xlsxFile.GetSheetList() {
 		filename := name
 		if sheet != "Sheet1" {
 			filename += "_" + sheet
@@ -74,9 +86,19 @@ func xlsxToCsv(src io.Reader, name string) {
 		csvFile, err := os.Create(filename + ".csv")
 		check(err)
 		csvWriter := csv.NewWriter(csvFile)
-		for _, row := range xlsxFile.GetRows(sheet) {
-			err = csvWriter.Write(row)
+		rows, err := xlsxFile.Rows(sheet)
+		check(err)
+		totalCols := 0
+		for rows.Next() {
+			row, err := rows.Columns()
 			check(err)
+			if totalCols < 1 {
+				totalCols = len(row)
+			}
+			for i := totalCols - len(row); i > 0; i-- {
+				row = append(row, "")
+			}
+			check(csvWriter.Write(row))
 		}
 		csvWriter.Flush()
 	}
@@ -86,15 +108,4 @@ func check(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-}
-
-func axis(col, row int) string {
-	return fmt.Sprintf("%s%d", convertToTitle(col), row)
-}
-
-func convertToTitle(n int) string {
-	if n < 26 {
-		return fmt.Sprintf("%c", n+'A')
-	}
-	return convertToTitle(n/26-1) + fmt.Sprintf("%c", n%26+'A')
 }
