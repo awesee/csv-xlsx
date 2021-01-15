@@ -32,6 +32,7 @@ func main() {
 		case ".xlsx":
 			xlsxToCsv(src, filename)
 		}
+		_ = src.Close()
 	}
 }
 
