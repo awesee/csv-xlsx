@@ -12,7 +12,7 @@ import (
 	"github.com/360EntSecGroup-Skylar/excelize"
 )
 
-const VERSION = "0.1.1"
+const VERSION = "0.1.2"
 
 func main() {
 	args := os.Args
@@ -25,18 +25,21 @@ func main() {
 		src, err := os.Open(filename)
 		check(err)
 		ext := strings.ToLower(filepath.Ext(filename))
-		filename = strings.TrimSuffix(filename, ext)
+		name := strings.TrimSuffix(filename, ext)
+		basename := filepath.Base(filename)
 		switch ext {
 		case ".csv":
-			csvToXlsx(src, filename)
+			csvToXlsx(src, name)
 		case ".xlsx":
-			xlsxToCsv(src, filename)
+			xlsxToCsv(src, name)
+		default:
+			fmt.Printf("skipping file %s\n", basename)
 		}
 		_ = src.Close()
 	}
 }
 
-func csvToXlsx(src io.Reader, filename string) {
+func csvToXlsx(src io.Reader, name string) {
 	maxRow := 0xFFFFF + 1
 	csvFile := csv.NewReader(src)
 	csvFile.FieldsPerRecord = -1
@@ -56,19 +59,19 @@ func csvToXlsx(src io.Reader, filename string) {
 		}
 	}
 	xlsxFile.SetActiveSheet(1)
-	err := xlsxFile.SaveAs(filename + ".xlsx")
+	err := xlsxFile.SaveAs(name + ".xlsx")
 	check(err)
 }
 
-func xlsxToCsv(src io.Reader, filename string) {
+func xlsxToCsv(src io.Reader, name string) {
 	xlsxFile, err := excelize.OpenReader(src)
 	check(err)
 	for _, sheet := range xlsxFile.GetSheetMap() {
-		name := filename
+		filename := name
 		if sheet != "Sheet1" {
-			name += "_" + sheet
+			filename += "_" + sheet
 		}
-		csvFile, err := os.Create(name + ".csv")
+		csvFile, err := os.Create(filename + ".csv")
 		check(err)
 		csvWriter := csv.NewWriter(csvFile)
 		for _, row := range xlsxFile.GetRows(sheet) {
