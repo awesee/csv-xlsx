@@ -12,7 +12,7 @@ import (
 	"github.com/360EntSecGroup-Skylar/excelize"
 )
 
-const VERSION = "0.1.0"
+const VERSION = "0.1.1"
 
 func main() {
 	args := os.Args
@@ -39,6 +39,7 @@ func main() {
 func csvToXlsx(src io.Reader, filename string) {
 	maxRow := 0xFFFFF + 1
 	csvFile := csv.NewReader(src)
+	csvFile.FieldsPerRecord = -1
 	xlsxFile := excelize.NewFile()
 	for row := 0; ; row++ {
 		record, err := csvFile.Read()
