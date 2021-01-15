@@ -20,9 +20,10 @@ func main() {
 		return
 	}
 	for _, filename := range args[1:] {
-		ext := strings.ToLower(filepath.Ext(filename))
 		src, err := os.Open(filename)
 		check(err)
+		ext := strings.ToLower(filepath.Ext(filename))
+		filename = strings.TrimSuffix(filename, ext)
 		switch ext {
 		case ".csv":
 			csvToXlsx(src, filename)
@@ -47,7 +48,7 @@ func csvToXlsx(src io.Reader, filename string) {
 			xlsxFile.SetCellValue("Sheet1", axis(k, row), v)
 		}
 	}
-	err := xlsxFile.SaveAs(filename[:len(filename)-4] + ".xlsx")
+	err := xlsxFile.SaveAs(filename + ".xlsx")
 	check(err)
 }
 
@@ -55,7 +56,7 @@ func xlsxToCsv(src io.Reader, filename string) {
 	xlsxFile, err := excelize.OpenReader(src)
 	check(err)
 	for _, sheet := range xlsxFile.GetSheetMap() {
-		name := filename[:len(filename)-5]
+		name := filename
 		if sheet != "Sheet1" {
 			name += "_" + sheet
 		}
