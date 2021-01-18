@@ -7,18 +7,20 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 )
 
-const VERSION = "0.2.0"
+const VERSION = "0.2.1"
 
 func main() {
 	args := os.Args
 	cmd := filepath.Base(args[0])
 	if len(args) < 2 {
-		fmt.Printf("Usage: %s file.csv|file.xlsx...\n", cmd)
+		fmt.Printf("%s version %s %s/%s\n\n", cmd, VERSION, runtime.GOOS, runtime.GOARCH)
+		fmt.Printf("usage:\n\t%s file.csv|file.xlsx...\n", cmd)
 		return
 	}
 	for _, filename := range args[1:] {
