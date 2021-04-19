@@ -13,7 +13,7 @@ import (
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 )
 
-const VERSION = "0.2.1"
+const VERSION = "0.2.2"
 
 func main() {
 	args := os.Args
