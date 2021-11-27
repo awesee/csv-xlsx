@@ -10,10 +10,10 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/360EntSecGroup-Skylar/excelize/v2"
+	"github.com/xuri/excelize/v2"
 )
 
-const VERSION = "0.2.2"
+const VERSION = "1.0.0"
 
 func main() {
 	args := os.Args
